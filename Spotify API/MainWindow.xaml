@@ -42,7 +42,7 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Grid>
                     <TextBox x:Name="userid" Margin="20,20,20,20" TextWrapping="Wrap" Width="190" Template="{StaticResource TextBoxBaseControlTemplate}" Padding="5"/>
-                    <TextBlock IsHitTestVisible="False" Text="qzunfzre6q5yqrm4mkykjby24" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="28,0,0,0" Foreground="DarkGray">
+                    <TextBlock IsHitTestVisible="False" Text="userid" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="28,0,0,0" Foreground="DarkGray">
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -73,16 +73,14 @@
                 <Button Content="Search" Width="100" HorizontalAlignment="Right" Background="#1ed561" Style="{DynamicResource Round}" Margin="20,20,20,20" Foreground="White" FontWeight="DemiBold" BorderThickness="0" Click="Button_Click"/>
             </StackPanel>
         </Grid>
-        <Grid Margin="0,70,0,0">
+        <Grid Margin="0,70,0,0" Background="#3c3c3c">
+            <TextBlock x:Name="errorbox" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,10,0,0" Foreground="Red"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <TextBlock x:Name="playlistcount" Margin="5,5,5,5" Foreground="DarkGray" />
+                <TextBlock x:Name="songcount" Margin="5,5,5,5" Foreground="DarkGray"  />
+            </StackPanel>
             <ScrollViewer HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled">
-                <StackPanel x:Name="cover" Orientation="Horizontal" Background="#3c3c3c" Width="Auto" Height="349">
-                    <Grid Margin="10,10,10,10">
-                        <StackPanel Orientation="Vertical" Margin="0,60,0,0">
-                            <!--<Image Source="" Width="150" Height="150"></Image>-->
-                            <Rectangle HorizontalAlignment="Center" Width="150" Height="150" Fill="AliceBlue"></Rectangle>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Bottom" Text="Name" Foreground="Gray" Margin="59,0,59,0"/>
-                        </StackPanel>
-                    </Grid>
+                <StackPanel x:Name="cover" Orientation="Horizontal" Width="Auto">
                 </StackPanel>
             </ScrollViewer>
         </Grid>

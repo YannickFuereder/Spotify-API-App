@@ -6,10 +6,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 
 namespace Spotify_API
@@ -22,51 +24,48 @@ namespace Spotify_API
         public MainWindow()
         {
             InitializeComponent();
-
-            Grid grid = new Grid();
-            StackPanel panel = new StackPanel();
-            System.Windows.Controls.Image image = new System.Windows.Controls.Image();
-            TextBlock textBlock = new TextBlock();
-           
-           
-            panel.Margin = new Thickness(0, 60, 0, 0);
-            panel.Orientation = Orientation.Vertical;
-            grid.Margin = new Thickness(10, 10, 10, 10);
-            textBlock.HorizontalAlignment = HorizontalAlignment.Center;
-            textBlock.VerticalAlignment = VerticalAlignment.Bottom;
-            textBlock.Foreground = Brushes.Gray;
-            textBlock.Margin = new Thickness(59, 0, 59, 0);
-            textBlock.Text = "auernig";
-            image.Width = 150;
-            image.Height = 150;
-
-            Uri resourceUri = new Uri("https://www.google.at/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png", UriKind.RelativeOrAbsolute);
-            image.Source = new BitmapImage(resourceUri);
-
-            panel.Children.Add(image);
-            panel.Children.Add(textBlock);
-            grid.Children.Add(panel);
-
-            cover.Children.Add(grid);
-
-            //SpotifyPlaylists playlists = GetPlayLists(GetToken(), userid.Text);
         }
 
-        private static SpotifyPlaylists GetPlayLists(string token, string user)
+        private async Task<SpotifyPlaylists> GetPlayLists(string token, string user)
         {
             string url = string.Format("https://api.spotify.com/v1/users/{0}/playlists", user);
-            SpotifyPlaylists playLists = JsonConvert.DeserializeObject<SpotifyPlaylists>(GetSpotifyType(token, url));
+            SpotifyPlaylists playLists = JsonConvert.DeserializeObject<SpotifyPlaylists>(await GetSpotifyType(token, url)); ;
+            url = playLists.next;
+
+            do
+            {
+                SpotifyPlaylists tmp = JsonConvert.DeserializeObject<SpotifyPlaylists>(await GetSpotifyType(token, url));
+                url = tmp.next;
+
+                for (int i = 0; i < tmp.items.Count; i++)
+                {
+                    playLists.items.Add(tmp.items[i]);
+                }
+            } while (url != null);
+
             return playLists;
         }
 
-        private static SpotifyTracks GetTracks(string token, string playlistid)
+        private async Task<SpotifyTracks> GetTracks(string token, string playlistid)
         {
             string url = string.Format("https://api.spotify.com/v1/playlists/{0}/tracks", playlistid);
-            SpotifyTracks tracks = JsonConvert.DeserializeObject<SpotifyTracks>(GetSpotifyType(token, url));
+            SpotifyTracks tracks = JsonConvert.DeserializeObject<SpotifyTracks>(await GetSpotifyType(token, url));
+
+            do
+            {
+                SpotifyTracks tmp = JsonConvert.DeserializeObject<SpotifyTracks>(await GetSpotifyType(token, url));
+                url = null;
+
+                for (int i = 0; i < tmp.items.Count; i++)
+                {
+                    tracks.items.Add(tmp.items[i]);
+                }
+            } while (url != null);
+
             return tracks;
         }
 
-        private static string GetSpotifyType(string token, string url)
+        private async Task<string> GetSpotifyType(string token, string url)
         {
             try
             {
@@ -75,7 +74,7 @@ namespace Spotify_API
                 request.Headers.Add("Authorization", "Bearer " + token);
                 request.ContentType = "application/json; charset=utf-8";
 
-                using (WebResponse response = request.GetResponse())
+                using (WebResponse response = await request.GetResponseAsync())
                 {
                     using (Stream dataStream = response.GetResponseStream())
                     {
@@ -86,13 +85,13 @@ namespace Spotify_API
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return string.Empty;
             }
         }
 
-        public static string GetToken()
+        public async Task<string> GetToken()
         {
             string clientsecret = "8fd74bacb679414e903a9fd81c715907";
             string clientname = "92ade0a726374eb1b29885752a8b5e1a";
@@ -114,7 +113,7 @@ namespace Spotify_API
             using (Stream dataStream = request.GetRequestStream())
             {
                 dataStream.Write(byteArray, 0, byteArray.Length);
-                using (WebResponse response = request.GetResponse())
+                using (WebResponse response = await request.GetResponseAsync())
                 {
                     using (Stream responseStream = response.GetResponseStream())
                     {
@@ -130,9 +129,98 @@ namespace Spotify_API
             return token;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (userid.Text == "")
+            {
+                errorbox.Text = "insert a userid";
+                return;
+            }
 
+            errorbox.Text = "";
+
+            SpotifyPlaylists playlists = new SpotifyPlaylists();
+
+            try
+            {
+                playlists = await GetPlayLists(await GetToken(), userid.Text);
+            }
+            catch (Exception)
+            {
+
+                errorbox.Text = "Something went wrong";
+            }
+           
+
+            int tracks = 0;
+            for (int i = 0; i < playlists.items.Count; i++)
+            {
+                tracks += playlists.items[i].tracks.total;
+            }
+
+            playlistcount.Text = "Playlists: " + playlists.items.Count;
+            songcount.Text = "Songs: " + tracks;
+
+            if (track.Text != "")
+            {
+                for (int i = 0; i < playlists.items.Count; i++)
+                {
+                    bool containstrack = false;
+                    SpotifyTracks playlisttracks = await GetTracks(await GetToken(), playlists.items[i].id);
+
+                    for (int y = 0; y < playlisttracks.items.Count; y++)
+                    {
+                        if (playlisttracks.items[y].track.name.ToLower() == track.Text.ToLower())
+                        {
+                            containstrack = true;
+                        }
+                    }
+
+                    if (!containstrack)
+                    {
+                        playlists.items.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
+
+            for (int i = 0; i < playlists.items.Count; i++)
+            {
+                Grid grid = new Grid();
+                StackPanel panel = new StackPanel();
+                System.Windows.Controls.Image image = new System.Windows.Controls.Image();
+                TextBlock textBlock = new TextBlock();
+                DropShadowEffect myDropShadowEffect = new DropShadowEffect();
+
+                myDropShadowEffect.Color = Colors.Black;
+                myDropShadowEffect.Direction = 320;
+                myDropShadowEffect.ShadowDepth = 25;
+                myDropShadowEffect.Opacity = 0.5;
+                myDropShadowEffect.BlurRadius = 40;
+                panel.Margin = new Thickness(0, 60, 0, 0);
+                panel.Orientation = Orientation.Vertical;
+                grid.Margin = new Thickness(10, 10, 10, 10);
+                textBlock.HorizontalAlignment = HorizontalAlignment.Center;
+                textBlock.VerticalAlignment = VerticalAlignment.Bottom;
+                textBlock.Foreground = Brushes.Gray;
+                textBlock.Margin = new Thickness(59, 5, 59, 0);
+                textBlock.Width = 100;
+                textBlock.TextAlignment = TextAlignment.Center;
+                image.Width = 150;
+                image.Height = 150;
+
+                textBlock.Text = playlists.items[i].name;
+
+                Uri resourceUri = new Uri(playlists.items[i].images[0].url, UriKind.RelativeOrAbsolute);
+                image.Source = new BitmapImage(resourceUri);
+
+                image.Effect = myDropShadowEffect;
+                panel.Children.Add(image);
+                panel.Children.Add(textBlock);
+                grid.Children.Add(panel);
+
+                cover.Children.Add(grid);
+            }
         }
     }
 }
