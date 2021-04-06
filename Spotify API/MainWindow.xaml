@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Spotify_API"
         mc:Ignorable="d"
         Title="Spotify" Height="450" Width="800"
-        ResizeMode="CanResize">
+        ResizeMode="CanResize" Icon="icon.png">
 
     <Window.Resources>
         <Style TargetType="Button" x:Key="Round">

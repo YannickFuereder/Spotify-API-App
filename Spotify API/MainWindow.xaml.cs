@@ -28,20 +28,23 @@ namespace Spotify_API
 
         private async Task<SpotifyPlaylists> GetPlayLists(string token, string user)
         {
-            string url = string.Format("https://api.spotify.com/v1/users/{0}/playlists", user);
-            SpotifyPlaylists playLists = JsonConvert.DeserializeObject<SpotifyPlaylists>(await GetSpotifyType(token, url)); ;
+            string url = string.Format("https://api.spotify.com/v1/users/{0}/playlists", user.Trim());
+            SpotifyPlaylists playLists = JsonConvert.DeserializeObject<SpotifyPlaylists>(await GetSpotifyType(token, url));
             url = playLists.next;
 
-            do
+            if (playLists.total > 20)
             {
-                SpotifyPlaylists tmp = JsonConvert.DeserializeObject<SpotifyPlaylists>(await GetSpotifyType(token, url));
-                url = tmp.next;
-
-                for (int i = 0; i < tmp.items.Count; i++)
+                do
                 {
-                    playLists.items.Add(tmp.items[i]);
-                }
-            } while (url != null);
+                    SpotifyPlaylists tmp = JsonConvert.DeserializeObject<SpotifyPlaylists>(await GetSpotifyType(token, url));
+                    url = tmp.next;
+
+                    for (int i = 0; i < tmp.items.Count; i++)
+                    {
+                        playLists.items.Add(tmp.items[i]);
+                    }
+                } while (url != null);
+            }
 
             return playLists;
         }
@@ -51,16 +54,27 @@ namespace Spotify_API
             string url = string.Format("https://api.spotify.com/v1/playlists/{0}/tracks", playlistid);
             SpotifyTracks tracks = JsonConvert.DeserializeObject<SpotifyTracks>(await GetSpotifyType(token, url));
 
-            do
+            if (tracks.total > 20)
             {
-                SpotifyTracks tmp = JsonConvert.DeserializeObject<SpotifyTracks>(await GetSpotifyType(token, url));
-                url = null;
-
-                for (int i = 0; i < tmp.items.Count; i++)
+                do
                 {
-                    tracks.items.Add(tmp.items[i]);
-                }
-            } while (url != null);
+                    SpotifyTracks tmp = JsonConvert.DeserializeObject<SpotifyTracks>(await GetSpotifyType(token, url));
+                    if (tmp.next != null)
+                    {
+                        url = tmp.next.ToString();
+                    }
+                    else
+                    {
+                        url = null;
+                    }
+                        
+
+                    for (int i = 0; i < tmp.items.Count; i++)
+                    {
+                        tracks.items.Add(tmp.items[i]);
+                    }
+                } while (url != null);
+            }
 
             return tracks;
         }
@@ -131,13 +145,14 @@ namespace Spotify_API
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
+            cover.Children.RemoveRange(0, cover.Children.Count);
+            errorbox.Text = "";
+
             if (userid.Text == "")
             {
                 errorbox.Text = "insert a userid";
                 return;
             }
-
-            errorbox.Text = "";
 
             SpotifyPlaylists playlists = new SpotifyPlaylists();
 
