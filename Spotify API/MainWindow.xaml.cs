@@ -37,7 +37,14 @@ namespace Spotify_API
                 do
                 {
                     SpotifyPlaylists tmp = JsonConvert.DeserializeObject<SpotifyPlaylists>(await GetSpotifyType(token, url));
-                    url = tmp.next;
+                    if (tmp.next != null)
+                    {
+                        url = tmp.next;
+                    }
+                    else
+                    {
+                        url = null;
+                    }
 
                     for (int i = 0; i < tmp.items.Count; i++)
                     {
