@@ -141,8 +141,8 @@ namespace Spotify_API
                         using (StreamReader reader = new StreamReader(responseStream))
                         {
                             string responseFromServer = reader.ReadToEnd();
-                            JObject obj = JObject.Parse(responseFromServer);
-                            token = (string)obj.SelectToken("access_token");
+                            dynamic obj = JObject.Parse(responseFromServer);
+                            token = (string)obj.access_token;
                         }
                     }
                 }
@@ -163,16 +163,7 @@ namespace Spotify_API
 
             SpotifyPlaylists playlists = new SpotifyPlaylists();
 
-            try
-            {
-                playlists = await GetPlayLists(await GetToken(), userid.Text);
-            }
-            catch (Exception)
-            {
-
-                errorbox.Text = "Something went wrong";
-            }
-           
+            playlists = await GetPlayLists(await GetToken(), userid.Text);
 
             int tracks = 0;
             for (int i = 0; i < playlists.items.Count; i++)
